@@ -5,6 +5,7 @@ import serial
 import serial.tools.list_ports
 from datetime import datetime
 
+
 # 创建主窗口类
 class MainWindow(QtWidgets.QMainWindow):
     # 初始化函数
@@ -31,10 +32,14 @@ class MainWindow(QtWidgets.QMainWindow):
         # 创建文本
         self.port_text = QtWidgets.QLabel('串口号:')
         self.baud_text = QtWidgets.QLabel('波特率:')
+        self.start_text = QtWidgets.QLabel('帧头:')
+        self.end_text = QtWidgets.QLabel('帧尾:')
 
         # 创建文本框
         self.input_text = QtWidgets.QTextEdit()
         self.output_text = QtWidgets.QTextEdit()
+        self.start_text_edit = QtWidgets.QLineEdit()
+        self.end_text_edit = QtWidgets.QLineEdit()
 
         # 创建下拉列表
         self.port_list = QtWidgets.QComboBox()
@@ -60,19 +65,32 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # 创建水平布局
         hbox1 = QtWidgets.QHBoxLayout()
+
         vbox1 = QtWidgets.QHBoxLayout()
         vbox1.addWidget(self.port_text)
         vbox1.addWidget(self.port_list)
+
         vbox2 = QtWidgets.QHBoxLayout()
         vbox2.addWidget(self.baud_text)
         vbox2.addWidget(self.baudrate_list)
+
+        vbox3 = QtWidgets.QHBoxLayout()
+        vbox3.addWidget(self.start_text)
+        vbox3.addWidget(self.start_text_edit)
+
+        vbox4 = QtWidgets.QHBoxLayout()
+        vbox4.addWidget(self.end_text)
+        vbox4.addWidget(self.end_text_edit)
+
         hbox1.addLayout(vbox1)
         hbox1.addLayout(vbox2)
-
+        hbox1.addLayout(vbox3)
+        hbox1.addLayout(vbox4)
+        hbox1.addWidget(self.switch_button)
         # 创建垂直布局
         vbox = QtWidgets.QVBoxLayout()
         vbox.addLayout(hbox1)
-        vbox.addWidget(self.switch_button)
+        # vbox.addWidget(self.switch_button)
         vbox.addWidget(self.input_text)
         vbox.addWidget(self.send_button)
         vbox.addWidget(self.output_text)
@@ -91,6 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.switch_button.clicked.connect(self.switch_port)
         self.send_button.clicked.connect(self.send_data)
         self.open_button.clicked.connect(self.open)
+
     def switch_port(self):
         # 如果串口未打开
         if self.serial_port.is_open is not True:
@@ -117,7 +136,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.timer.timeout.connect(self.read_data)
 
             # 改变外观
-            self.setWindowTitle(port_name+'串口已连接 波特率:'+baudrate)
+            self.setWindowTitle(port_name + '串口已连接 波特率:' + baudrate)
             self.switch_button.setText("关闭串口")
             self.switch_button.setStyleSheet(
                 'QPushButton {color: #ffffff; background-color: #FF6347; border-radius: 4px; padding: 5px 10px;}')
@@ -138,6 +157,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def send_data(self):
         # 获取输入框内容
         data = self.input_text.toPlainText()
+        self.start_text_edit.text()
+        if self.start_text_edit.text() != "":
+            data = self.start_text_edit.text() + data
+        if self.end_text_edit.text() != "":
+            data = data + self.end_text_edit.text()
 
         # 将内容转换为字节流
         data = data.encode()
@@ -160,7 +184,7 @@ class MainWindow(QtWidgets.QMainWindow):
         data = data.decode('gbk')
         if data != '':
             # 将数据显示到输出框
-            self.output_text.append(datetime.now().strftime("%H:%M:%S.%f")+" <- "+data)
+            self.output_text.append(datetime.now().strftime("%H:%M:%S.%f") + " <- " + data)
 
 
 if __name__ == "__main__":
@@ -168,6 +192,3 @@ if __name__ == "__main__":
     main_window = MainWindow()
     main_window.show()
     sys.exit(app.exec_())
-
-
-
