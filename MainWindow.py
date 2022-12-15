@@ -38,15 +38,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.start_text = QtWidgets.QLabel('帧头:')
         self.end_text = QtWidgets.QLabel('帧尾:')
 
-        # 设置默认帧头和帧尾
-        self.start_text.setText('@')
-        self.end_text.setText('#')
 
         # 创建文本框
         self.input_text = QtWidgets.QLineEdit()
         self.output_text = QtWidgets.QTextEdit()
         self.start_text_edit = QtWidgets.QLineEdit()
         self.end_text_edit = QtWidgets.QLineEdit()
+
+        # 设置默认帧头和帧尾
+        self.start_text_edit.setText('@')
+        self.end_text_edit.setText('#')
 
         # 创建下拉列表
         self.port_list = QtWidgets.QComboBox()
