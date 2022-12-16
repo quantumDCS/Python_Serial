@@ -4,6 +4,7 @@ import serial
 import serial.tools.list_ports
 from datetime import datetime
 from LedWindow import LedWindow
+from WaveWindow import WaveWindow
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -13,6 +14,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # 创建下级窗口
         self.led_window = LedWindow()
+        self.wave_window = WaveWindow()
 
         # 设置窗口标题
         self.setWindowTitle('Python 上位机 未连接串口')
@@ -29,15 +31,15 @@ class MainWindow(QtWidgets.QMainWindow):
         # 创建按钮
         self.switch_button = QtWidgets.QPushButton('打开串口')
         self.send_button = QtWidgets.QPushButton('发送数据')
-        self.led_button = QtWidgets.QPushButton('灯光控制')
         self.groupFrames_button = QtWidgets.QRadioButton('组帧')
+        self.led_button = QtWidgets.QPushButton('灯光控制')
+        self.wave_button = QtWidgets.QPushButton('波形控制')
 
         # 创建文本
         self.port_text = QtWidgets.QLabel('串口号:')
         self.baud_text = QtWidgets.QLabel('波特率:')
         self.start_text = QtWidgets.QLabel('帧头:')
         self.end_text = QtWidgets.QLabel('帧尾:')
-
 
         # 创建文本框
         self.input_text = QtWidgets.QLineEdit()
@@ -67,7 +69,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.send_button.setStyleSheet(
             'QPushButton {color: #ffffff; background-color: #00c0ef; border-radius: 4px; padding: 5px 10px;}')
         self.led_button.setStyleSheet(
-            'QPushButton {color: #ffffff; background-color: #00c0ef; border-radius: 4px; padding: 5px 10px;}')
+            'QPushButton {color: #ffffff; background-color: #FFA500; border-radius: 4px; padding: 5px 10px;}')
+        self.wave_button.setStyleSheet(
+            'QPushButton {color: #ffffff; background-color: #EE9A00; border-radius: 4px; padding: 5px 10px;}')
 
         # 创建水平布局
         hbox1 = QtWidgets.QHBoxLayout()
@@ -99,12 +103,16 @@ class MainWindow(QtWidgets.QMainWindow):
         hbox2.addWidget(self.groupFrames_button)
         hbox2.addWidget(self.send_button)
 
+        hbox3 = QtWidgets.QHBoxLayout()
+        hbox3.addWidget(self.led_button)
+        hbox3.addWidget(self.wave_button)
+
         # 创建垂直布局
         vbox = QtWidgets.QVBoxLayout()
         vbox.addLayout(hbox1)
         vbox.addWidget(self.output_text)
         vbox.addLayout(hbox2)
-        vbox.addWidget(self.led_button)
+        vbox.addLayout(hbox3)
 
         # 创建中心窗口
         central_widget = QtWidgets.QWidget()
@@ -117,6 +125,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.switch_button.clicked.connect(self.switch_port)
         self.send_button.clicked.connect(lambda: self.send_data(self.input_text.text()))
         self.led_button.clicked.connect(self.led_control)
+        self.wave_button.clicked.connect(self.wave_control)
 
         # 连接定时器事件
         self.refreshPortListTimer.start(500)
@@ -211,3 +220,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def led_control(self):
         self.led_window.show()
         self.led_window.ledControlSignal.connect(self.send_data)
+
+    def wave_control(self):
+        self.wave_window.show()
+        self.wave_window.waveControlSignal.connect(self.send_data)
