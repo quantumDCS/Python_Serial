@@ -5,6 +5,7 @@ import serial.tools.list_ports
 from datetime import datetime
 from LedWindow import LedWindow
 from WaveWindow import WaveWindow
+import codecs
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -44,24 +45,24 @@ class MainWindow(QtWidgets.QMainWindow):
         # 创建文本框
         self.input_text = QtWidgets.QLineEdit()
         self.output_text = QtWidgets.QTextEdit()
-        self.start_text_edit = QtWidgets.QLineEdit()
-        self.end_text_edit = QtWidgets.QLineEdit()
+        self.start_flag_edit = QtWidgets.QLineEdit()
+        self.end_flag_edit = QtWidgets.QLineEdit()
 
         # 设置默认帧头和帧尾
-        self.start_text_edit.setText('@')
-        self.end_text_edit.setText('#')
+        self.start_flag_edit.setText('\x02')
+        self.end_flag_edit.setText('\x03')
 
         # 创建下拉列表
         self.port_list = QtWidgets.QComboBox()
-        self.baudrate_list = QtWidgets.QComboBox()
+        self.baudRate_list = QtWidgets.QComboBox()
 
         # 设置定时器
         self.refreshPortListTimer = QtCore.QTimer(self)
         self.receiveDataTimer = QtCore.QTimer(self)
 
         # 设置下拉列表内容
-        self.baudrate_list.addItems(['9600', '19200', '38400', '57600', '115200'])
-        self.baudrate_list.setCurrentIndex(4)
+        self.baudRate_list.addItems(['9600', '19200', '38400', '57600', '115200'])
+        self.baudRate_list.setCurrentIndex(4)
 
         # 设置按钮样式
         self.switch_button.setStyleSheet(
@@ -82,15 +83,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         hbox1_2 = QtWidgets.QHBoxLayout()
         hbox1_2.addWidget(self.baud_text)
-        hbox1_2.addWidget(self.baudrate_list)
+        hbox1_2.addWidget(self.baudRate_list)
 
         hbox1_3 = QtWidgets.QHBoxLayout()
         hbox1_3.addWidget(self.start_text)
-        hbox1_3.addWidget(self.start_text_edit)
+        hbox1_3.addWidget(self.start_flag_edit)
 
         hbox1_4 = QtWidgets.QHBoxLayout()
         hbox1_4.addWidget(self.end_text)
-        hbox1_4.addWidget(self.end_text_edit)
+        hbox1_4.addWidget(self.end_flag_edit)
 
         hbox1.addLayout(hbox1_1)
         hbox1.addLayout(hbox1_2)
@@ -149,7 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # 获取串口名和波特率
             port_name = self.port_list.currentText()
-            baudrate = self.baudrate_list.currentText()
+            baudrate = self.baudRate_list.currentText()
 
             # 设置串口参数
             self.serial_port.port = port_name
@@ -188,31 +189,31 @@ class MainWindow(QtWidgets.QMainWindow):
     def send_data(self, data: str):
         if data == "":
             return
+
         if self.groupFrames_button.isChecked():
-            if self.start_text_edit.text() != "":
-                data = self.start_text_edit.text() + data
-            if self.end_text_edit.text() != "":
-                data = data + self.end_text_edit.text()
-
+            if self.start_flag_edit.text() != "":
+                data = self.start_flag_edit.text() + data
+            if self.end_flag_edit.text() != "":
+                data = data + self.end_flag_edit.text()
         # 将内容转换为字节流
-        data = data.encode()
-
+        data = data.encode('gbk')
         # 发送数据
         self.serial_port.write(data)
 
-    def open(self):
-        # 将内容转换为字节流
-        data = "open#".encode()
-
-        # 发送数据
-        self.serial_port.write(data)
+    def decode_bytes(self, byte_stream: bytes):
+        try:
+            decoded_string = byte_stream.decode("gbk", "replace")
+            return decoded_string
+        except:
+            return "?".join("?" for _ in byte_stream)
 
     def read_data(self):
         # 从串口读取数据
         data = self.serial_port.readline()
-
+        if data == b'':
+            return
         # 将数据转换为字符串
-        data = data.decode('gbk')
+        data = self.decode_bytes(data)
         if data != '':
             # 将数据显示到输出框
             self.output_text.append(datetime.now().strftime("%H:%M:%S.%f") + " <- " + data)
