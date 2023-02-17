@@ -17,7 +17,7 @@ class WaveWindow(QtWidgets.QMainWindow):
         self.setWindowIcon(QtGui.QIcon('icon.png'))
 
         # 设置窗口大小
-        self.resize(400, 150)
+        self.resize(400, 60)
 
         # 创建按钮
         self.triangularWave_button = QtWidgets.QPushButton('三角波')

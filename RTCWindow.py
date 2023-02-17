@@ -182,7 +182,7 @@ class RTCWindow(QtWidgets.QMainWindow):
     def synchronize_time(self):
         self.rtcControlSignal.emit(datetime.datetime.now().strftime("%y/%m/%d %H:%M:%S 星期%w"))
 
-    def synchronize_time_auto(self, time: str):
+    def synchronize_time_auto(self):
         self.compareTimeTimer.start(60000)
         self.compareTimeTimer.timeout.connect(self.synchronize_time)
         self.synchronize_time_auto_button.setText("已开启自动对时，每60s自动同步时间")

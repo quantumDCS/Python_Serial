@@ -5,9 +5,9 @@ import serial.tools.list_ports
 from datetime import datetime
 from LedWindow import LedWindow
 from WaveWindow import WaveWindow
-from TimeWindow import TimeWindow
+from SystickWindow import SystickWindow
 from RTCWindow import RTCWindow
-
+from TimerWindow import TimerWindow
 
 class MainWindow(QtWidgets.QMainWindow):
     # 初始化函数
@@ -17,8 +17,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # 创建下级窗口
         self.led_window = LedWindow()
         self.wave_window = WaveWindow()
-        self.time_window = TimeWindow()
+        self.systick_window = SystickWindow()
         self.rtc_window = RTCWindow()
+        self.timer_window = TimerWindow()
+
         # 设置窗口标题
         self.setWindowTitle('Python 上位机 未连接串口')
 
@@ -38,8 +40,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.groupFrames_button = QtWidgets.QRadioButton('组帧')
         self.led_button = QtWidgets.QPushButton('灯光控制')
         self.wave_button = QtWidgets.QPushButton('波形控制')
-        self.time_button = QtWidgets.QPushButton('时间控制')
+        self.systick_button = QtWidgets.QPushButton('Systick控制')
         self.rtc_button = QtWidgets.QPushButton('RTC对时')
+        self.timer_button = QtWidgets.QPushButton('Timer计时')
 
         # 创建文本
         self.port_text = QtWidgets.QLabel('串口号:')
@@ -80,10 +83,12 @@ class MainWindow(QtWidgets.QMainWindow):
             'QPushButton {color: #ffffff; background-color: #FFA500; border-radius: 4px; padding: 5px 10px;}')
         self.wave_button.setStyleSheet(
             'QPushButton {color: #ffffff; background-color: #605654; border-radius: 4px; padding: 5px 10px;}')
-        self.time_button.setStyleSheet(
+        self.systick_button.setStyleSheet(
             'QPushButton {color: #ffffff; background-color: #00687C; border-radius: 4px; padding: 5px 10px;}')
         self.rtc_button.setStyleSheet(
             'QPushButton {color: #ffffff; background-color: #6D557E; border-radius: 4px; padding: 5px 10px;}')
+        self.timer_button.setStyleSheet(
+            'QPushButton {color: #ffffff; background-color: #B84E39; border-radius: 4px; padding: 5px 10px;}')
 
         # 创建水平布局
         hbox1 = QtWidgets.QHBoxLayout()
@@ -118,8 +123,9 @@ class MainWindow(QtWidgets.QMainWindow):
         hbox3 = QtWidgets.QHBoxLayout()
         hbox3.addWidget(self.led_button)
         hbox3.addWidget(self.wave_button)
-        hbox3.addWidget(self.time_button)
+        hbox3.addWidget(self.systick_button)
         hbox3.addWidget(self.rtc_button)
+        hbox3.addWidget(self.timer_button)
 
         # 创建垂直布局
         vbox = QtWidgets.QVBoxLayout()
@@ -140,8 +146,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.send_button.clicked.connect(lambda: self.send_data(self.input_text.text()))
         self.led_button.clicked.connect(self.led_control)
         self.wave_button.clicked.connect(self.wave_control)
-        self.time_button.clicked.connect(self.time_control)
+        self.systick_button.clicked.connect(self.time_control)
         self.rtc_button.clicked.connect(self.rtc_control)
+        self.timer_button.clicked.connect(self.timer_contorl)
 
         # 设置定时器事件
         self.refreshPortListTimer.start(500)
@@ -215,9 +222,11 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.end_flag_edit.text() != "":
                 data = data + self.end_flag_edit.text()
         # 将内容转换为字节流
-        data = data.encode('gbk')
+        data_bytes = data.encode('gbk')
         # 发送数据
-        self.serial_port.write(data)
+        self.serial_port.write(data_bytes)
+        # 将数据显示到输出框
+        self.output_text.append(datetime.now().strftime("%H:%M:%S.%f") + " → " + data.rstrip("\n\r"))
 
     def decode_bytes(self, byte_stream: bytes):
         try:
@@ -234,7 +243,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # 将数据转换为字符串
         data = self.decode_bytes(data)
         # 将数据显示到输出框
-        self.output_text.append(datetime.now().strftime("%H:%M:%S.%f") + " <- " + data)
+        self.output_text.append(datetime.now().strftime("%H:%M:%S.%f") + " ← " + data.rstrip("\n\r"))
         self.received_serial_data = data
 
     def led_control(self):
@@ -246,8 +255,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.wave_window.waveControlSignal.connect(self.send_data)
 
     def time_control(self):
-        self.time_window.show()
-        self.time_window.timeControlSignal.connect(self.send_data)
+        self.systick_window.show()
+        self.systick_window.timeControlSignal.connect(self.send_data)
 
     def rtc_control(self):
         self.rtc_window.show()
@@ -268,3 +277,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rtc_window.RTC_minute_text.setText(str(rtc_time.minute))
         self.rtc_window.RTC_second_text.setText(str(rtc_time.second))
         self.rtc_window.RTC_weekday_text.setText(str(rtc_time.weekday() + 1))
+
+    def timer_contorl(self):
+        self.timer_window.show()
+        self.timer_window.timerControlSignal.connect(self.send_data)

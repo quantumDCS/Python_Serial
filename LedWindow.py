@@ -17,7 +17,7 @@ class LedWindow(QtWidgets.QMainWindow):
         self.setWindowIcon(QtGui.QIcon('icon.png'))
 
         # 设置窗口大小
-        self.resize(400, 200)
+        self.resize(400, 100)
 
         # 创建按钮
         self.redLED_button = QtWidgets.QPushButton('红色')
