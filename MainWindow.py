@@ -8,6 +8,7 @@ from WaveWindow import WaveWindow
 from SystickWindow import SystickWindow
 from RTCWindow import RTCWindow
 from TimerWindow import TimerWindow
+from FlashStorageWindow import FlashStorageWindow
 
 class MainWindow(QtWidgets.QMainWindow):
     # 初始化函数
@@ -20,6 +21,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.systick_window = SystickWindow()
         self.rtc_window = RTCWindow()
         self.timer_window = TimerWindow()
+        self.flashstroage_window = FlashStorageWindow()
 
         # 设置窗口标题
         self.setWindowTitle('Python 上位机 未连接串口')
@@ -43,6 +45,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.systick_button = QtWidgets.QPushButton('Systick控制')
         self.rtc_button = QtWidgets.QPushButton('RTC对时')
         self.timer_button = QtWidgets.QPushButton('Timer计时')
+        self.flashstorage_button = QtWidgets.QPushButton('Flash写入')
 
         # 创建文本
         self.port_text = QtWidgets.QLabel('串口号:')
@@ -89,6 +92,8 @@ class MainWindow(QtWidgets.QMainWindow):
             'QPushButton {color: #ffffff; background-color: #6D557E; border-radius: 4px; padding: 5px 10px;}')
         self.timer_button.setStyleSheet(
             'QPushButton {color: #ffffff; background-color: #B84E39; border-radius: 4px; padding: 5px 10px;}')
+        self.flashstorage_button.setStyleSheet(
+            'QPushButton {color: #ffffff; background-color: #7B4F4D; border-radius: 4px; padding: 5px 10px;}')
 
         # 创建水平布局
         hbox1 = QtWidgets.QHBoxLayout()
@@ -127,12 +132,16 @@ class MainWindow(QtWidgets.QMainWindow):
         hbox3.addWidget(self.rtc_button)
         hbox3.addWidget(self.timer_button)
 
+        hbox4 = QtWidgets.QHBoxLayout()
+        hbox4.addWidget(self.flashstorage_button)
+
         # 创建垂直布局
         vbox = QtWidgets.QVBoxLayout()
         vbox.addLayout(hbox1)
         vbox.addWidget(self.output_text)
         vbox.addLayout(hbox2)
         vbox.addLayout(hbox3)
+        vbox.addLayout(hbox4)
 
         # 创建中心窗口
         central_widget = QtWidgets.QWidget()
@@ -148,7 +157,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.wave_button.clicked.connect(self.wave_control)
         self.systick_button.clicked.connect(self.time_control)
         self.rtc_button.clicked.connect(self.rtc_control)
-        self.timer_button.clicked.connect(self.timer_contorl)
+        self.timer_button.clicked.connect(self.timer_control)
+        self.flashstorage_button.clicked.connect(self.flashstorage_control)
 
         # 设置定时器事件
         self.refreshPortListTimer.start(500)
@@ -241,9 +251,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if data == b'':
             return
         # 将数据转换为字符串
-        data = self.decode_bytes(data)
+        data = self.decode_bytes(data).strip("\r\n")
+        if data == '':
+            return
         # 将数据显示到输出框
-        self.output_text.append(datetime.now().strftime("%H:%M:%S.%f") + " ← " + data.rstrip("\n\r"))
+        self.output_text.append(datetime.now().strftime("%H:%M:%S.%f") + " ← " + data.strip("\r\n"))
         self.received_serial_data = data
 
     def led_control(self):
@@ -278,6 +290,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rtc_window.RTC_second_text.setText(str(rtc_time.second))
         self.rtc_window.RTC_weekday_text.setText(str(rtc_time.weekday() + 1))
 
-    def timer_contorl(self):
+    def timer_control(self):
         self.timer_window.show()
         self.timer_window.timerControlSignal.connect(self.send_data)
+
+    def flashstorage_control(self):
+        self.flashstroage_window.show()
+        self.flashstroage_window.flashstorageSignal.connect(self.send_data)
