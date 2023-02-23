@@ -77,6 +77,6 @@ class FlashStorageWindow(QtWidgets.QMainWindow):
         # 连接按钮事件
         self.send_button.clicked.connect(self.flashWrite)
 
-    def flashWrite(self, time: str):
+    def flashWrite(self):
         self.flashstorageSignal.emit(functions.format_no(self.no_edit.text()) + functions.format_score(self.score1_edit.value()) + functions.format_score(self.score2_edit.text()) + functions.format_score(
             self.score3_edit.text()) + self.name_edit.text())

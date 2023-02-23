@@ -1,14 +1,22 @@
 # 导入所需的库
+import time
+
 from PyQt5 import QtWidgets, QtCore, QtGui
 import serial
 import serial.tools.list_ports
 from datetime import datetime
+import re
+
+from PyQt5.QtWidgets import QTableWidgetItem, QTableWidget
+
 from LedWindow import LedWindow
 from WaveWindow import WaveWindow
 from SystickWindow import SystickWindow
 from RTCWindow import RTCWindow
 from TimerWindow import TimerWindow
 from FlashStorageWindow import FlashStorageWindow
+from DataBaseWindow import DataBaseWindow
+
 
 class MainWindow(QtWidgets.QMainWindow):
     # 初始化函数
@@ -22,6 +30,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rtc_window = RTCWindow()
         self.timer_window = TimerWindow()
         self.flashstroage_window = FlashStorageWindow()
+        self.database_window = DataBaseWindow()
 
         # 设置窗口标题
         self.setWindowTitle('Python 上位机 未连接串口')
@@ -35,6 +44,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # 创建串口对象
         self.serial_port = serial.Serial()
         self.received_serial_data = ""
+        self.received_log = []
+        self.start_flag = '\x02'
+        self.end_flag = '\x03'
 
         # 创建按钮
         self.switch_button = QtWidgets.QPushButton('打开串口')
@@ -46,6 +58,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rtc_button = QtWidgets.QPushButton('RTC对时')
         self.timer_button = QtWidgets.QPushButton('Timer计时')
         self.flashstorage_button = QtWidgets.QPushButton('Flash写入')
+        self.db_button = QtWidgets.QPushButton('数据库存取')
 
         # 创建文本
         self.port_text = QtWidgets.QLabel('串口号:')
@@ -60,8 +73,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.end_flag_edit = QtWidgets.QLineEdit()
 
         # 设置组帧
-        self.start_flag_edit.setText('\x02')
-        self.end_flag_edit.setText('\x03')
+        self.start_flag_edit.setText('0x02')
+        self.end_flag_edit.setText('0x03')
         self.groupFrames_button.setChecked(True)
 
         # 创建下拉列表
@@ -72,6 +85,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.refreshPortListTimer = QtCore.QTimer(self)
         self.receiveDataTimer = QtCore.QTimer(self)
         self.updateTimeTimer = QtCore.QTimer(self)
+        self.updateDBTimer = QtCore.QTimer(self)
 
         # 设置下拉列表内容
         self.baudRate_list.addItems(['9600', '19200', '38400', '57600', '115200'])
@@ -94,6 +108,8 @@ class MainWindow(QtWidgets.QMainWindow):
             'QPushButton {color: #ffffff; background-color: #B84E39; border-radius: 4px; padding: 5px 10px;}')
         self.flashstorage_button.setStyleSheet(
             'QPushButton {color: #ffffff; background-color: #7B4F4D; border-radius: 4px; padding: 5px 10px;}')
+        self.db_button.setStyleSheet(
+            'QPushButton {color: #ffffff; background-color: #BF373D; border-radius: 4px; padding: 5px 10px;}')
 
         # 创建水平布局
         hbox1 = QtWidgets.QHBoxLayout()
@@ -134,6 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         hbox4 = QtWidgets.QHBoxLayout()
         hbox4.addWidget(self.flashstorage_button)
+        hbox4.addWidget(self.db_button)
 
         # 创建垂直布局
         vbox = QtWidgets.QVBoxLayout()
@@ -151,6 +168,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(central_widget)
 
         # 连接按钮事件
+        self.start_flag_edit.textChanged.connect(self.flagChanged)
+        self.end_flag_edit.textChanged.connect(self.flagChanged)
         self.switch_button.clicked.connect(self.switch_port)
         self.send_button.clicked.connect(lambda: self.send_data(self.input_text.text()))
         self.led_button.clicked.connect(self.led_control)
@@ -159,10 +178,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rtc_button.clicked.connect(self.rtc_control)
         self.timer_button.clicked.connect(self.timer_control)
         self.flashstorage_button.clicked.connect(self.flashstorage_control)
+        self.db_button.clicked.connect(self.db_control)
 
         # 设置定时器事件
         self.refreshPortListTimer.start(500)
         self.refreshPortListTimer.timeout.connect(self.refreshPortList)
+        self.updateDBTimer.timeout.connect(self.db_update)
+
+    def flagChanged(self):
+        if self.start_flag_edit.text() == '0x02':
+            self.start_flag = '\x02'
+        else:
+            self.start_flag = self.start_flag_edit.text()
+        if self.end_flag_edit.text() == '0x03':
+            self.end_flag = '\x03'
+        else:
+            self.end_flag = self.end_flag_edit.text()
 
     def refreshPortList(self):
         self.port_list.clear()
@@ -227,10 +258,10 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         if self.groupFrames_button.isChecked():
-            if self.start_flag_edit.text() != "":
-                data = self.start_flag_edit.text() + data
-            if self.end_flag_edit.text() != "":
-                data = data + self.end_flag_edit.text()
+            if self.start_flag != "":
+                data = self.start_flag + data
+            if self.end_flag != "":
+                data = data + self.end_flag
         # 将内容转换为字节流
         data_bytes = data.encode('gbk')
         # 发送数据
@@ -257,6 +288,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # 将数据显示到输出框
         self.output_text.append(datetime.now().strftime("%H:%M:%S.%f") + " ← " + data.strip("\r\n"))
         self.received_serial_data = data
+        self.received_log.append(data)
 
     def led_control(self):
         self.led_window.show()
@@ -297,3 +329,56 @@ class MainWindow(QtWidgets.QMainWindow):
     def flashstorage_control(self):
         self.flashstroage_window.show()
         self.flashstroage_window.flashstorageSignal.connect(self.send_data)
+
+    def db_control(self):
+        self.database_window.show()
+        self.database_window.dbSignal.connect(self.send_data)
+        self.database_window.readSignal.connect(self.db_send)
+
+    def db_send(self, data: str):
+        self.database_window.read_table.setRowCount(0)
+        self.database_window.read_table.clearContents()
+        self.database_window.read_table.setHorizontalHeaderLabels(['学号', '姓名', '成绩'])
+        if self.serial_port.is_open is not True:
+            QtWidgets.QMessageBox.critical(self, "严重警告", "串口未打开！")
+            return
+        if data == "":
+            QtWidgets.QMessageBox.warning(self, "警告", "发送数据不能为空")
+            return
+
+        if self.groupFrames_button.isChecked():
+            data = '\x05' + data
+            if self.end_flag != "":
+                data = data + self.end_flag
+        # 将内容转换为字节流
+        data_bytes = data.encode('gbk')
+        # 发送数据
+        self.serial_port.write(data_bytes)
+        # 将数据显示到输出框
+        self.output_text.append(datetime.now().strftime("%H:%M:%S.%f") + " → " + data.rstrip("\n\r"))
+        self.updateDBTimer.setSingleShot(True)
+        self.updateDBTimer.start(250*self.database_window.num_edit.value())
+
+    def db_update(self):
+        # 读取最后 num_records 条记录
+        num_records = self.database_window.num_edit.value()
+        log_records = self.received_log[-num_records:]
+        for record in log_records:
+            # 使用正则表达式分割记录
+            match = re.match(r"(\d{10})(\d{3})([\u4e00-\u9fa5]+)", record)
+            if match:
+                # 分别获取第一部分、第三部分、第二部分
+                part1, part2, part3 = match.groups()
+                # 判断第一部分是否已经在表格中存在
+                exists = False
+                for row in range(self.database_window.read_table.rowCount()):
+                    if self.database_window.read_table.item(row, 0).text() == part1:
+                        exists = True
+                        break
+                # 如果第一部分不存在，则插入该条记录
+                if not exists:
+                    row_count = self.database_window.read_table.rowCount()
+                    self.database_window.read_table.insertRow(row_count)
+                    self.database_window.read_table.setItem(row_count, 0, QtWidgets.QTableWidgetItem(part1))
+                    self.database_window.read_table.setItem(row_count, 1, QtWidgets.QTableWidgetItem(part3))
+                    self.database_window.read_table.setItem(row_count, 2, QtWidgets.QTableWidgetItem(part2))

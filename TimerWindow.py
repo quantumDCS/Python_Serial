@@ -89,6 +89,6 @@ class TimerWindow(QtWidgets.QMainWindow):
         self.minute_text.setText(minute)
         self.second_text.setText(second)
 
-    def timerControl(self, time: str):
+    def timerControl(self):
         self.timerControlSignal.emit(functions.format_time(self.hour_text.text()) + functions.format_time(self.minute_text.text()) + functions.format_time(self.second_text.text()) + functions.format_time(self.blinking_interval.text()))
 

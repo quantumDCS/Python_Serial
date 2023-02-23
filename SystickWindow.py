@@ -81,5 +81,5 @@ class SystickWindow(QtWidgets.QMainWindow):
         self.minute_text.setText(minute)
         self.second_text.setText(second)
 
-    def timeControl(self, time: str):
+    def timeControl(self):
         self.timeControlSignal.emit(functions.format_time(self.hour_text.text()) + functions.format_time(self.minute_text.text()) + functions.format_time(self.second_text.text()))

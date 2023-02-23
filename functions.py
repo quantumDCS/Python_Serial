@@ -40,3 +40,9 @@ def format_score(num):
         return str(num)
     else:
         return "0" * (3 - len(num)) + str(num)
+
+
+def format_name(name: str):
+    while len(name.encode()) <= len("董传晟".encode()):
+        name = name + " "
+    return name
